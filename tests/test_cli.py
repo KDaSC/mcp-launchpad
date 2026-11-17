@@ -499,10 +499,13 @@ class TestConfigFilesCommand:
     """Config discovery should work with both output formats."""
 
     @pytest.mark.parametrize("json_mode", [False, True])
-    def test_lists_active_and_inactive_configs(self, runner, tmp_path, monkeypatch, json_mode):
+    @pytest.mark.parametrize("home_relative", [False, True])
+    def test_lists_active_and_inactive_configs(self, runner, tmp_path, monkeypatch, json_mode, home_relative):
         from mcp_launchpad.config_preferences import ConfigPreferencesManager
 
         monkeypatch.chdir(tmp_path)
+        if home_relative:
+            monkeypatch.setattr(Path, "home", lambda: tmp_path)
         monkeypatch.delenv("MCPL_CONFIG_FILES", raising=False)
         monkeypatch.setattr("mcp_launchpad.config.CONFIG_SEARCH_DIRS", [tmp_path])
         first = tmp_path / "mcp.json"
@@ -529,8 +532,8 @@ class TestConfigFilesCommand:
             assert "Config Files:" in result.output
             assert "ACTIVE" in result.output
             assert "INACTIVE" in result.output
-            assert str(first) in result.output
-            assert str(second) in result.output
+            assert str(first).replace(str(Path.home()), "~") in result.output
+            assert str(second).replace(str(Path.home()), "~") in result.output
 
 
 class TestVerifyCommand:
